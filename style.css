@@ -1,0 +1,218 @@
+:root {
+  --navy: #12296b;
+  --blue: #2f6fed;
+  --blue-bg: #eaf1fb;
+  --green: #1fa971;
+  --green-bg: #e8f7f0;
+  --gray-bg: #eef0f5;
+  --purple: #6b4fd6;
+  --purple-bg: #f1eefb;
+  --red: #d64545;
+  --amber: #d68a1f;
+  --text: #1c2333;
+  --muted: #6b7280;
+  --border: #e1e5ee;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: #f5f7fb;
+  color: var(--text);
+}
+
+.topbar {
+  background: var(--navy);
+  color: white;
+  padding: 18px 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.topbar-title h1 { margin: 0; font-size: 20px; }
+.topbar-title span { font-size: 13px; opacity: 0.75; }
+
+.tabs { display: flex; gap: 8px; }
+.tab-btn {
+  background: rgba(255,255,255,0.1);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+.tab-btn.active { background: white; color: var(--navy); font-weight: 600; }
+
+main { max-width: 1200px; margin: 0 auto; padding: 24px 20px 60px; }
+
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+.card {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px 20px;
+  margin-bottom: 20px;
+}
+.card-title { font-weight: 700; margin-bottom: 12px; font-size: 15px; }
+
+.details-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+.details-grid label, .filters-grid label {
+  display: flex;
+  flex-direction: column;
+  font-size: 12px;
+  color: var(--muted);
+  gap: 4px;
+}
+input, select, textarea {
+  font-size: 14px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-family: inherit;
+  color: var(--text);
+}
+.status-badge-wrap { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); }
+.week-range-hint { font-size: 11px; color: var(--blue); font-weight: 600; }
+.badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  width: fit-content;
+}
+.badge.draft { background: #fef3e2; color: var(--amber); }
+.badge.submitted { background: var(--green-bg); color: var(--green); }
+
+.allocation-bar-wrap { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+#allocation-label { font-size: 13px; color: var(--muted); white-space: nowrap; }
+
+.quadrant-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+@media (max-width: 800px) {
+  .quadrant-grid { grid-template-columns: 1fr; }
+  .details-grid, .filters-grid { grid-template-columns: 1fr 1fr; }
+}
+
+.quadrant-box {
+  border-radius: 12px;
+  padding: 16px;
+  min-height: 140px;
+}
+.quadrant-box.blue { background: var(--blue-bg); }
+.quadrant-box.green { background: var(--green-bg); }
+.quadrant-box.gray { background: var(--gray-bg); }
+.quadrant-box.purple { background: var(--purple-bg); }
+.quadrant-box.amber { background: #fef3e2; }
+
+.admin-box { margin-bottom: 20px; }
+.quadrant-box label { display: flex; flex-direction: column; font-size: 12px; color: var(--muted); gap: 4px; margin-top: 10px; }
+.quadrant-box textarea { width: 100%; }
+
+.quadrant-side-fields { display: flex; gap: 8px; flex-shrink: 0; }
+.mini-field, .admin-hours-label { margin-top: 0; width: 90px; flex-shrink: 0; }
+.mini-field input, .mini-field select, .admin-hours-label input { width: 100%; text-align: center; }
+
+.quadrant-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+.quadrant-head h3 { margin: 0; font-size: 15px; }
+.quadrant-head .subtitle { display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; color: var(--muted); margin-bottom: 2px; }
+.quadrant-head .desc { display: block; font-size: 12px; color: var(--muted); margin-top: 2px; }
+.empty-hint { font-size: 12px; color: var(--muted); font-style: italic; padding: 8px 0; }
+
+.summary-list { display: flex; flex-direction: column; gap: 10px; }
+.summary-row { display: flex; align-items: center; gap: 12px; }
+.summary-row-label { width: 220px; flex-shrink: 0; font-size: 13px; font-weight: 600; }
+.summary-bar-wrap { flex: 1; height: 14px; background: var(--gray-bg); border-radius: 6px; overflow: hidden; }
+.summary-bar-fill { height: 100%; background: var(--blue); }
+.summary-row-value { width: 110px; flex-shrink: 0; text-align: right; font-size: 12px; color: var(--muted); white-space: nowrap; }
+
+.footer-actions { display: flex; justify-content: space-between; align-items: center; }
+.footer-actions-right { display: flex; gap: 10px; }
+
+.btn { border: none; padding: 10px 18px; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; }
+.btn-primary { background: var(--blue); color: white; }
+.btn-secondary { background: var(--navy); color: white; }
+.btn-ghost { background: white; border: 1px solid var(--border); color: var(--text); }
+.btn-warning { background: var(--amber); color: white; }
+.btn-danger { background: var(--red); color: white; }
+.btn:hover { opacity: 0.9; }
+
+.filters-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  align-items: end;
+}
+.checkbox-label { flex-direction: row !important; align-items: center; gap: 6px !important; }
+.checkbox-label input { width: auto; }
+.filters-actions { display: flex; align-items: flex-end; gap: 8px; }
+
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 14px;
+  margin-bottom: 20px;
+}
+@media (max-width: 900px) { .stats-row { grid-template-columns: repeat(2, 1fr); } .filters-grid { grid-template-columns: 1fr 1fr; } }
+.stat-card {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+.stat-card .stat-value { font-size: 24px; font-weight: 800; color: var(--navy); }
+.stat-card .stat-label { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+.balance-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+@media (max-width: 800px) { .balance-row { grid-template-columns: 1fr; } }
+.balance-card { background: white; border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+.balance-title { font-size: 13px; font-weight: 700; margin-bottom: 10px; }
+.stacked-bar { display: flex; height: 22px; border-radius: 6px; overflow: hidden; background: var(--border); }
+.stacked-bar .seg-a { background: var(--blue); }
+.stacked-bar .seg-b { background: var(--purple); }
+.stacked-bar .seg-green { background: var(--green); }
+.stacked-bar .seg-yellow { background: var(--amber); }
+.stacked-bar .seg-red { background: var(--red); }
+.stacked-legend { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-top: 6px; }
+.value-legend { display: flex; gap: 10px; flex-wrap: wrap; }
+
+.dashboard-quadrant-stats { font-size: 12px; color: var(--text); }
+.dashboard-quadrant-stats div { margin-bottom: 3px; }
+.dashboard-quadrant-stats .dq-value { font-weight: 700; }
+
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+th { color: var(--muted); font-weight: 600; font-size: 12px; }
+tr:hover td { background: #fafbfd; }
+
+.excel-table { border: 1px solid var(--border); max-height: 70vh; }
+.excel-table th, .excel-table td { border: 1px solid var(--border); }
+.excel-table thead th {
+  position: sticky; top: 0;
+  background: #f3f5fa;
+  cursor: pointer;
+  user-select: none;
+}
+.excel-table thead th:hover { background: #e9ecf5; }
+.excel-table thead th.sorted-asc::after { content: ' ▲'; font-size: 9px; }
+.excel-table thead th.sorted-desc::after { content: ' ▼'; font-size: 9px; }
+.excel-table tbody tr:nth-child(even) td { background: #fafbfd; }
+.excel-table tbody tr:hover td { background: #eef2fb; }
+.excel-table td.wrap-cell { white-space: normal; max-width: 280px; font-size: 12px; color: var(--muted); }
+.excel-table td.wrap-cell.blockers { color: var(--red); }

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Weekly 2x2 Team Report</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-title">
+    <h1>Weekly 2×2 Report</h1>
+    <span>Perform vs Transform — team weekly tracking</span>
+  </div>
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="submission">Weekly Submission</button>
+    <button class="tab-btn" data-tab="team-input">Report</button>
+  </nav>
+</header>
+
+<main>
+
+  <!-- ===================== SUBMISSION TAB ===================== -->
+  <section id="tab-submission" class="tab-panel active">
+
+    <div class="card">
+      <div class="card-title">Submission details</div>
+      <div class="details-grid">
+        <label>Contributor's name*
+          <input type="text" id="f-contributor" placeholder="e.g. John Smith" />
+        </label>
+        <label>Reporting week*
+          <input type="date" id="f-week" />
+          <input type="hidden" id="f-week-canonical" />
+          <span id="f-week-range" class="week-range-hint"></span>
+        </label>
+        <div class="status-badge-wrap">
+          <span>Submission status</span>
+          <span id="submission-status-badge" class="badge draft">Draft</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="allocation-bar-wrap">
+      <span id="allocation-label">Total hours logged: 0h</span>
+    </div>
+
+    <div class="quadrant-grid" id="quadrant-grid"></div>
+
+    <div class="quadrant-box amber admin-box">
+      <div class="quadrant-head">
+        <div>
+          <span class="subtitle">Admin</span>
+          <h3>Administrative activity</h3>
+        </div>
+        <label class="admin-hours-label">Hours spent
+          <input type="number" id="admin-hours" min="0" step="0.5" placeholder="e.g. 2" />
+        </label>
+      </div>
+      <label>Activity
+        <textarea id="admin-notes" rows="3" placeholder="Describe administrative activity"></textarea>
+      </label>
+    </div>
+
+    <div class="footer-actions">
+      <button id="btn-copy-prev" class="btn btn-ghost">Copy previous week</button>
+      <div class="footer-actions-right">
+        <button id="btn-save-draft" class="btn btn-secondary">Save draft</button>
+        <button id="btn-submit-week" class="btn btn-primary">Submit week</button>
+        <button id="btn-reopen" class="btn btn-warning" style="display:none;">Reopen for edits</button>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ===================== TEAM INPUT TAB ===================== -->
+  <section id="tab-team-input" class="tab-panel">
+
+    <div class="card">
+      <div class="card-title">Team summary — where the team's time is going</div>
+      <div id="team-summary" class="summary-list"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Individual reports — one row per contributor per week</div>
+      <div class="filters-grid">
+        <label>Search
+          <input type="text" id="ti-search" placeholder="Contributor, activity..." />
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" id="ti-include-drafts" checked />
+          Include drafts
+        </label>
+        <div class="filters-actions">
+          <button id="btn-export-csv-team" class="btn btn-secondary">Export CSV</button>
+        </div>
+      </div>
+      <div class="table-wrap" style="margin-top:12px;">
+        <table id="team-input-table" class="excel-table">
+          <thead>
+            <tr>
+              <th data-sort="contributor">Contributor</th>
+              <th data-sort="week">Week</th>
+              <th data-sort="status">Submission</th>
+              <th data-sort="activitiesCount">Activities</th>
+              <th data-sort="hoursTotal">Hours</th>
+              <th data-sort="summaryText">Summary</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+  </section>
+
+
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>

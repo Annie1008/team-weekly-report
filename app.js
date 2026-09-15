@@ -1,0 +1,512 @@
+const STORAGE_KEY = 'twr_submissions_v1';
+
+const QUADRANTS = [
+  { key: 'standardize_scale', title: 'Standardize & Scale', subtitle: 'Long-Term · Perform', desc: 'Make what works repeatable and scalable', term: 'long', mode: 'perform', color: 'blue' },
+  { key: 'build_future', title: 'Build the Future', subtitle: 'Long-Term · Transform', desc: "Create what's next", term: 'long', mode: 'transform', color: 'green' },
+  { key: 'run_business', title: 'Run the Business', subtitle: 'Short-Term · Perform', desc: 'Keep the engine running', term: 'short', mode: 'perform', color: 'gray' },
+  { key: 'pilot_improve', title: 'Pilot & Improve', subtitle: 'Short-Term · Transform', desc: 'Test, learn and iterate', term: 'short', mode: 'transform', color: 'purple' },
+];
+
+function loadSubmissions() {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveSubmissions(list) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+}
+
+function submissionKey(contributor, week) {
+  return (contributor || '').trim().toLowerCase() + '|' + week;
+}
+
+// Submissions are keyed by the Monday of the reporting week, stored as "YYYY-MM-DD"
+// (sortable as plain strings) and always displayed to users as DD/MM/YYYY.
+function parseISODate(str) {
+  if (!str) return null;
+  const [y, m, d] = str.split('-').map(Number);
+  if (!y || !m || !d) return null;
+  return new Date(y, m - 1, d);
+}
+
+function mondayOf(date) {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diff);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function toCanonical(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function formatDMY(date) {
+  if (!date) return '';
+  const d = String(date.getDate()).padStart(2, '0');
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const y = date.getFullYear();
+  return `${d}/${m}/${y}`;
+}
+
+function weekRangeLabel(monday) {
+  const sunday = new Date(monday);
+  sunday.setDate(sunday.getDate() + 6);
+  return `Week: ${formatDMY(monday)} – ${formatDMY(sunday)}`;
+}
+
+function formatWeekCell(canonicalWeek) {
+  return formatDMY(parseISODate(canonicalWeek));
+}
+
+let currentSubmission = null;
+
+// ---------- Tabs ----------
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    if (btn.dataset.tab === 'team-input') renderTeamInputTable();
+  });
+});
+
+// ---------- Submission form: create/load current draft ----------
+function defaultWeekValue() {
+  return toCanonical(new Date());
+}
+
+// Reads the picked calendar date, snaps it to that week's Monday, writes the
+// canonical "YYYY-MM-DD" key + a DD/MM/YYYY range hint, then reloads the draft.
+function onWeekFieldChange() {
+  const raw = document.getElementById('f-week').value;
+  if (!raw) {
+    document.getElementById('f-week-canonical').value = '';
+    document.getElementById('f-week-range').textContent = '';
+    loadOrCreateCurrent();
+    return;
+  }
+  const monday = mondayOf(parseISODate(raw));
+  document.getElementById('f-week-canonical').value = toCanonical(monday);
+  document.getElementById('f-week-range').textContent = weekRangeLabel(monday);
+  loadOrCreateCurrent();
+}
+
+function newEmptySubmission(contributor, week) {
+  const quadrants = {};
+  QUADRANTS.forEach(q => { quadrants[q.key] = { activity: '', hours: 0 }; });
+  return {
+    id: submissionKey(contributor, week),
+    contributor: contributor || '',
+    week: week,
+    status: 'Draft',
+    createdAt: new Date().toISOString(),
+    submittedAt: null,
+    quadrants,
+    adminNotes: '',
+    adminHours: 0,
+  };
+}
+
+function ensureQuadrant(key) {
+  if (!currentSubmission.quadrants) currentSubmission.quadrants = {};
+  if (!currentSubmission.quadrants[key]) currentSubmission.quadrants[key] = { activity: '', hours: 0 };
+  return currentSubmission.quadrants[key];
+}
+
+function loadOrCreateCurrent() {
+  const contributor = document.getElementById('f-contributor').value.trim();
+  const week = document.getElementById('f-week-canonical').value;
+  if (!contributor || !week) {
+    currentSubmission = newEmptySubmission(contributor, week || defaultWeekValue());
+    renderQuadrants();
+    return;
+  }
+  const all = loadSubmissions();
+  const found = all.find(s => s.id === submissionKey(contributor, week));
+  currentSubmission = found ? JSON.parse(JSON.stringify(found)) : newEmptySubmission(contributor, week);
+  updateStatusBadge();
+  renderQuadrants();
+}
+
+function updateStatusBadge() {
+  const badge = document.getElementById('submission-status-badge');
+  const submitted = currentSubmission.status === 'Submitted';
+  badge.textContent = currentSubmission.status;
+  badge.className = 'badge ' + (submitted ? 'submitted' : 'draft');
+  document.getElementById('btn-submit-week').style.display = submitted ? 'none' : '';
+  document.getElementById('btn-reopen').style.display = submitted ? '' : 'none';
+  setFormDisabled(submitted);
+}
+
+function setFormDisabled(disabled) {
+  QUADRANTS.forEach(q => {
+    document.getElementById(`q-activity-${q.key}`).disabled = disabled;
+    document.getElementById(`q-hours-${q.key}`).disabled = disabled;
+  });
+  document.getElementById('admin-notes').disabled = disabled;
+  document.getElementById('admin-hours').disabled = disabled;
+}
+
+function renderAdminBox() {
+  document.getElementById('admin-notes').value = currentSubmission.adminNotes || '';
+  document.getElementById('admin-hours').value = currentSubmission.adminHours || '';
+}
+
+document.getElementById('admin-notes').addEventListener('input', () => {
+  currentSubmission.adminNotes = document.getElementById('admin-notes').value.trim();
+});
+document.getElementById('admin-hours').addEventListener('input', () => {
+  currentSubmission.adminHours = Number(document.getElementById('admin-hours').value) || 0;
+  updateAllocationBar();
+});
+
+document.getElementById('f-contributor').addEventListener('change', loadOrCreateCurrent);
+document.getElementById('f-week').addEventListener('change', onWeekFieldChange);
+
+// ---------- Render quadrants (submission tab) ----------
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str == null ? '' : str;
+  return div.innerHTML;
+}
+
+function renderQuadrants() {
+  const grid = document.getElementById('quadrant-grid');
+  grid.innerHTML = QUADRANTS.map(q => {
+    const qd = ensureQuadrant(q.key);
+    return `
+      <div class="quadrant-box ${q.color}" data-quadrant="${q.key}">
+        <div class="quadrant-head">
+          <div>
+            <span class="subtitle">${q.subtitle}</span>
+            <h3>${q.title}</h3>
+            <span class="desc">${q.desc}</span>
+          </div>
+          <div class="quadrant-side-fields">
+            <label class="mini-field">Hours spent
+              <input type="number" id="q-hours-${q.key}" min="0" step="0.5" placeholder="e.g. 4" value="${qd.hours || ''}" />
+            </label>
+          </div>
+        </div>
+        <label>Activity
+          <textarea id="q-activity-${q.key}" rows="3" placeholder="Describe the activity / deliverable">${escapeHtml(qd.activity)}</textarea>
+        </label>
+      </div>`;
+  }).join('');
+
+  QUADRANTS.forEach(q => {
+    document.getElementById(`q-activity-${q.key}`).addEventListener('input', () => {
+      ensureQuadrant(q.key).activity = document.getElementById(`q-activity-${q.key}`).value.trim();
+    });
+    document.getElementById(`q-hours-${q.key}`).addEventListener('input', () => {
+      ensureQuadrant(q.key).hours = Number(document.getElementById(`q-hours-${q.key}`).value) || 0;
+      updateAllocationBar();
+    });
+  });
+
+  renderAdminBox();
+  updateAllocationBar();
+  updateStatusBadge();
+}
+
+function updateAllocationBar() {
+  const total = QUADRANTS.reduce((sum, q) => sum + (Number(ensureQuadrant(q.key).hours) || 0), 0)
+    + (Number(currentSubmission.adminHours) || 0);
+  document.getElementById('allocation-label').textContent = `Total hours logged: ${total}h`;
+}
+
+// ---------- Footer actions ----------
+function persistCurrent() {
+  if (!currentSubmission.contributor || !currentSubmission.week) {
+    alert("Contributor's name and reporting week are required.");
+    return false;
+  }
+  currentSubmission.id = submissionKey(currentSubmission.contributor, currentSubmission.week);
+  const all = loadSubmissions();
+  const idx = all.findIndex(s => s.id === currentSubmission.id);
+  if (idx >= 0) all[idx] = currentSubmission; else all.push(currentSubmission);
+  saveSubmissions(all);
+  return true;
+}
+
+document.getElementById('btn-save-draft').addEventListener('click', () => {
+  currentSubmission.contributor = document.getElementById('f-contributor').value.trim();
+  currentSubmission.week = document.getElementById('f-week-canonical').value;
+  currentSubmission.status = currentSubmission.status === 'Submitted' ? 'Submitted' : 'Draft';
+  if (persistCurrent()) {
+    updateStatusBadge();
+    alert('Draft saved.');
+  }
+});
+
+document.getElementById('btn-submit-week').addEventListener('click', () => {
+  currentSubmission.contributor = document.getElementById('f-contributor').value.trim();
+  currentSubmission.week = document.getElementById('f-week-canonical').value;
+  const hasAnyActivity = QUADRANTS.some(q => ensureQuadrant(q.key).activity) || currentSubmission.adminNotes;
+  if (!hasAnyActivity) {
+    if (!confirm('No activities added yet. Submit anyway?')) return;
+  }
+  currentSubmission.status = 'Submitted';
+  currentSubmission.submittedAt = new Date().toISOString();
+  if (persistCurrent()) {
+    updateStatusBadge();
+    alert('Week submitted.');
+  }
+});
+
+document.getElementById('btn-reopen').addEventListener('click', () => {
+  currentSubmission.status = 'Draft';
+  currentSubmission.submittedAt = null;
+  persistCurrent();
+  updateStatusBadge();
+});
+
+document.getElementById('btn-copy-prev').addEventListener('click', () => {
+  const contributor = document.getElementById('f-contributor').value.trim();
+  const week = document.getElementById('f-week-canonical').value;
+  if (!contributor || !week) { alert("Enter the contributor's name and reporting week first."); return; }
+  const all = loadSubmissions();
+  const candidate = all
+    .filter(s => s.contributor.trim().toLowerCase() === contributor.toLowerCase() && s.week < week)
+    .sort((a, b) => b.week.localeCompare(a.week))[0];
+  if (!candidate) { alert('No previous submission found for this contributor.'); return; }
+  currentSubmission.quadrants = JSON.parse(JSON.stringify(candidate.quadrants || {}));
+  currentSubmission.adminNotes = candidate.adminNotes || '';
+  currentSubmission.adminHours = candidate.adminHours || 0;
+  renderQuadrants();
+});
+
+function downloadCSV(headers, rows, filenamePrefix) {
+  const csv = [headers, ...rows].map(r =>
+    r.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')
+  ).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `${filenamePrefix}-${new Date().toISOString().slice(0, 10)}.csv`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+// ---------- Team Input tab: one row per contributor's weekly submission, summarized ----------
+const teamInputSort = { field: 'week', dir: 'desc' };
+
+function buildSubmissionSummary(s) {
+  const quadrants = s.quadrants || {};
+  const qTitle = k => (QUADRANTS.find(q => q.key === k) || {}).title || k;
+  const entries = QUADRANTS
+    .map(q => ({ ...(quadrants[q.key] || {}), quadrant: q.key }))
+    .filter(e => e.activity && e.activity.trim());
+  const n = entries.length;
+  const quadrantHours = QUADRANTS.reduce((sum, q) => sum + (Number((quadrants[q.key] || {}).hours) || 0), 0);
+
+  return {
+    contributor: s.contributor,
+    week: s.week,
+    status: s.status,
+    activitiesCount: n,
+    hoursTotal: quadrantHours + (Number(s.adminHours) || 0),
+    summaryText: [
+      ...entries.map(a => `[${qTitle(a.quadrant)}] ${a.activity}`),
+      s.adminNotes ? `[Administrative activity] ${s.adminNotes}` : null,
+    ].filter(Boolean).join('; '),
+  };
+}
+
+function getTeamInputSummaryRows(includeDrafts, search) {
+  let rows = loadSubmissions()
+    .filter(s => includeDrafts || s.status === 'Submitted')
+    .map(buildSubmissionSummary);
+  if (search) {
+    rows = rows.filter(r =>
+      [r.contributor, r.summaryText].some(v => (v || '').toLowerCase().includes(search))
+    );
+  }
+  return rows;
+}
+
+function getQuadrantHoursBreakdown(includeDrafts, search) {
+  let submissions = loadSubmissions().filter(s => includeDrafts || s.status === 'Submitted');
+  if (search) {
+    submissions = submissions.filter(s => {
+      const summary = buildSubmissionSummary(s);
+      return [s.contributor, summary.summaryText].some(v => (v || '').toLowerCase().includes(search));
+    });
+  }
+
+  const totals = QUADRANTS.map(q => ({
+    title: q.title,
+    hours: submissions.reduce((sum, s) => sum + (Number((s.quadrants && s.quadrants[q.key] || {}).hours) || 0), 0),
+  }));
+  totals.push({
+    title: 'Administrative activity',
+    hours: submissions.reduce((sum, s) => sum + (Number(s.adminHours) || 0), 0),
+  });
+
+  const grandTotal = totals.reduce((sum, t) => sum + t.hours, 0);
+  return { totals, grandTotal };
+}
+
+function renderTeamSummary() {
+  const includeDrafts = document.getElementById('ti-include-drafts').checked;
+  const search = document.getElementById('ti-search').value.trim().toLowerCase();
+  const { totals, grandTotal } = getQuadrantHoursBreakdown(includeDrafts, search);
+  const sorted = [...totals].sort((a, b) => b.hours - a.hours);
+
+  document.getElementById('team-summary').innerHTML = sorted.map(t => {
+    const pct = grandTotal ? Math.round((t.hours / grandTotal) * 100) : 0;
+    return `
+      <div class="summary-row">
+        <div class="summary-row-label">${escapeHtml(t.title)}</div>
+        <div class="summary-bar-wrap"><div class="summary-bar-fill" style="width:${pct}%"></div></div>
+        <div class="summary-row-value">${t.hours}h · ${pct}%</div>
+      </div>`;
+  }).join('') || '<div class="empty-hint">No data yet</div>';
+}
+
+function renderTeamInputTable() {
+  const includeDrafts = document.getElementById('ti-include-drafts').checked;
+  const search = document.getElementById('ti-search').value.trim().toLowerCase();
+  renderTeamSummary();
+  const rows = getTeamInputSummaryRows(includeDrafts, search);
+
+  const field = teamInputSort.field;
+  const dir = teamInputSort.dir === 'asc' ? 1 : -1;
+  const numericFields = ['activitiesCount', 'hoursTotal'];
+  rows.sort((a, b) => {
+    if (numericFields.includes(field)) return ((a[field] || 0) - (b[field] || 0)) * dir;
+    return String(a[field] ?? '').localeCompare(String(b[field] ?? '')) * dir;
+  });
+
+  document.querySelectorAll('#team-input-table th').forEach(th => {
+    th.classList.remove('sorted-asc', 'sorted-desc');
+    if (th.dataset.sort === field) th.classList.add(teamInputSort.dir === 'asc' ? 'sorted-asc' : 'sorted-desc');
+  });
+
+  document.querySelector('#team-input-table tbody').innerHTML = rows.map(r => `
+    <tr>
+      <td>${escapeHtml(r.contributor)}</td>
+      <td>${formatWeekCell(r.week)}</td>
+      <td>${r.status}</td>
+      <td>${r.activitiesCount}</td>
+      <td>${r.hoursTotal}h</td>
+      <td class="wrap-cell">${escapeHtml(r.summaryText) || '—'}</td>
+      <td><button class="btn btn-ghost ti-open-btn" data-contributor="${escapeHtml(r.contributor)}" data-week="${r.week}">Open</button></td>
+    </tr>`).join('') || '<tr><td colspan="6" class="empty-hint">No submissions yet</td></tr>';
+
+  document.querySelectorAll('.ti-open-btn').forEach(btn => {
+    btn.addEventListener('click', () => openSubmissionInForm(btn.dataset.contributor, btn.dataset.week));
+  });
+}
+
+function openSubmissionInForm(contributor, week) {
+  document.getElementById('f-contributor').value = contributor;
+  document.getElementById('f-week').value = week;
+  onWeekFieldChange();
+  document.querySelector('.tab-btn[data-tab="submission"]').click();
+}
+
+document.querySelectorAll('#team-input-table th[data-sort]').forEach(th => {
+  th.addEventListener('click', () => {
+    if (teamInputSort.field === th.dataset.sort) {
+      teamInputSort.dir = teamInputSort.dir === 'asc' ? 'desc' : 'asc';
+    } else {
+      teamInputSort.field = th.dataset.sort;
+      teamInputSort.dir = 'asc';
+    }
+    renderTeamInputTable();
+  });
+});
+
+document.getElementById('ti-search').addEventListener('input', renderTeamInputTable);
+document.getElementById('ti-include-drafts').addEventListener('change', renderTeamInputTable);
+
+document.getElementById('btn-export-csv-team').addEventListener('click', () => {
+  const includeDrafts = document.getElementById('ti-include-drafts').checked;
+  const search = document.getElementById('ti-search').value.trim().toLowerCase();
+  const rows = getTeamInputSummaryRows(includeDrafts, search);
+  const headers = ['Contributor', 'Week', 'Submission Status', 'Activities', 'Hours', 'Summary'];
+  const csvRows = rows.map(r => [
+    r.contributor, formatWeekCell(r.week), r.status, r.activitiesCount, r.hoursTotal, r.summaryText
+  ]);
+  downloadCSV(headers, csvRows, 'team-input-summary-export');
+});
+
+// ---------- Demo data (seeded once so a shared link isn't blank) ----------
+function seedDemoDataIfEmpty() {
+  if (loadSubmissions().length > 0) return;
+
+  const thisMonday = toCanonical(mondayOf(new Date()));
+  const lastMonday = toCanonical(mondayOf(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)));
+
+  const sample = [
+    {
+      contributor: 'Alex Kumar', week: thisMonday, status: 'Submitted',
+      quadrants: {
+        standardize_scale: { activity: 'Refined estimation guidelines for Q3 rollout', hours: 6 },
+        build_future: { activity: 'Prototyped new onboarding flow', hours: 8 },
+        run_business: { activity: 'Resolved production ticket backlog', hours: 10 },
+        pilot_improve: { activity: 'Ran A/B test on checkout flow', hours: 4 },
+      },
+      adminNotes: 'Team sync, timesheets, 1:1s', adminHours: 4,
+    },
+    {
+      contributor: 'Alex Kumar', week: lastMonday, status: 'Submitted',
+      quadrants: {
+        standardize_scale: { activity: 'Documented estimation process', hours: 4 },
+        build_future: { activity: 'Built onboarding flow wireframes', hours: 6 },
+        run_business: { activity: 'On-call support and incident response', hours: 12 },
+        pilot_improve: { activity: 'Analyzed A/B test results', hours: 3 },
+      },
+      adminNotes: 'Sprint planning, status reports', adminHours: 5,
+    },
+    {
+      contributor: 'Priya Singh', week: thisMonday, status: 'Draft',
+      quadrants: {
+        standardize_scale: { activity: 'Standardized deployment checklist', hours: 8 },
+        build_future: { activity: 'Researched new analytics platform', hours: 5 },
+        run_business: { activity: 'Handled customer escalations', hours: 8 },
+        pilot_improve: { activity: 'Piloted self-serve reporting widget', hours: 6 },
+      },
+      adminNotes: 'Weekly team meeting, expense reports', adminHours: 3,
+    },
+    {
+      contributor: 'Priya Singh', week: lastMonday, status: 'Submitted',
+      quadrants: {
+        standardize_scale: { activity: 'Rolled out standardized templates', hours: 7 },
+        build_future: { activity: 'Kicked off analytics platform evaluation', hours: 6 },
+        run_business: { activity: 'Triaged support queue', hours: 9 },
+        pilot_improve: { activity: 'Gathered feedback on reporting widget pilot', hours: 5 },
+      },
+      adminNotes: 'Onboarding new hire, admin paperwork', adminHours: 4,
+    },
+  ];
+
+  const all = sample.map(item => ({
+    id: submissionKey(item.contributor, item.week),
+    contributor: item.contributor,
+    week: item.week,
+    status: item.status,
+    createdAt: new Date().toISOString(),
+    submittedAt: item.status === 'Submitted' ? new Date().toISOString() : null,
+    quadrants: item.quadrants,
+    adminNotes: item.adminNotes,
+    adminHours: item.adminHours,
+  }));
+  saveSubmissions(all);
+}
+
+// ---------- Init ----------
+seedDemoDataIfEmpty();
+document.getElementById('f-week').value = defaultWeekValue();
+onWeekFieldChange();
