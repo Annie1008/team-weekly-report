@@ -357,11 +357,65 @@ function getQuadrantHoursBreakdown(includeDrafts, search) {
   return { totals, grandTotal };
 }
 
+function buildTeamNarrative(includeDrafts, search) {
+  let submissions = loadSubmissions().filter(s => includeDrafts || s.status === 'Submitted');
+  if (search) {
+    submissions = submissions.filter(s => {
+      const summary = buildSubmissionSummary(s);
+      return [s.contributor, summary.summaryText].some(v => (v || '').toLowerCase().includes(search));
+    });
+  }
+  if (submissions.length === 0) return 'No data yet — once contributors submit their hours, a summary will appear here.';
+
+  const contributors = new Set(submissions.map(s => s.contributor)).size;
+  const weeks = new Set(submissions.map(s => s.week)).size;
+  const submittedCount = submissions.filter(s => s.status === 'Submitted').length;
+  const draftCount = submissions.length - submittedCount;
+
+  const quadrantTotals = QUADRANTS.map(q => ({
+    ...q,
+    hours: submissions.reduce((sum, s) => sum + (Number((s.quadrants && s.quadrants[q.key] || {}).hours) || 0), 0),
+  }));
+  const adminHours = submissions.reduce((sum, s) => sum + (Number(s.adminHours) || 0), 0);
+  const grandTotal = quadrantTotals.reduce((sum, q) => sum + q.hours, 0) + adminHours;
+
+  const performHours = quadrantTotals.filter(q => q.mode === 'perform').reduce((sum, q) => sum + q.hours, 0) + adminHours;
+  const transformHours = quadrantTotals.filter(q => q.mode === 'transform').reduce((sum, q) => sum + q.hours, 0);
+  const performPct = grandTotal ? Math.round((performHours / grandTotal) * 100) : 0;
+  const transformPct = grandTotal ? Math.round((transformHours / grandTotal) * 100) : 0;
+
+  const topQuadrant = [...quadrantTotals, { title: 'Administrative activity', hours: adminHours }]
+    .sort((a, b) => b.hours - a.hours)[0];
+
+  const perContributor = {};
+  submissions.forEach(s => {
+    const total = (s.quadrants ? Object.values(s.quadrants).reduce((sum, q) => sum + (Number(q.hours) || 0), 0) : 0)
+      + (Number(s.adminHours) || 0);
+    perContributor[s.contributor] = (perContributor[s.contributor] || 0) + total;
+  });
+  const topContributor = Object.entries(perContributor).sort((a, b) => b[1] - a[1])[0];
+
+  const sentences = [];
+  sentences.push(`Across ${contributors} contributor${contributors === 1 ? '' : 's'} and ${weeks} week${weeks === 1 ? '' : 's'}, the team logged ${grandTotal}h total (${submittedCount} submitted, ${draftCount} in draft).`);
+  sentences.push(`The largest share of time went to "${topQuadrant.title}" (${topQuadrant.hours}h) — overall, ${performPct}% of hours were spent on running/scaling the business ("Perform") versus ${transformPct}% on future-focused work ("Transform").`);
+  if (topContributor) {
+    sentences.push(`${topContributor[0]} logged the most hours this period (${topContributor[1]}h).`);
+  }
+  if (performPct - transformPct >= 30) {
+    sentences.push(`The team is heavily weighted toward day-to-day execution — worth checking whether transformation initiatives are getting enough runway.`);
+  } else if (transformPct - performPct >= 30) {
+    sentences.push(`The team is investing heavily in future-focused work relative to day-to-day execution.`);
+  }
+  return sentences.join(' ');
+}
+
 function renderTeamSummary() {
   const includeDrafts = document.getElementById('ti-include-drafts').checked;
   const search = document.getElementById('ti-search').value.trim().toLowerCase();
   const { totals, grandTotal } = getQuadrantHoursBreakdown(includeDrafts, search);
   const sorted = [...totals].sort((a, b) => b.hours - a.hours);
+
+  document.getElementById('team-summary-narrative').textContent = buildTeamNarrative(includeDrafts, search);
 
   document.getElementById('team-summary').innerHTML = sorted.map(t => {
     const pct = grandTotal ? Math.round((t.hours / grandTotal) * 100) : 0;

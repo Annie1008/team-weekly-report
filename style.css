@@ -134,6 +134,8 @@ input, select, textarea {
 .quadrant-head .desc { display: block; font-size: 12px; color: var(--muted); margin-top: 2px; }
 .empty-hint { font-size: 12px; color: var(--muted); font-style: italic; padding: 8px 0; }
 
+.narrative-text { font-size: 13px; color: var(--text); line-height: 1.6; margin: 0 0 16px; padding: 12px 14px; background: var(--blue-bg); border-radius: 8px; }
+
 .summary-list { display: flex; flex-direction: column; gap: 10px; }
 .summary-row { display: flex; align-items: center; gap: 12px; }
 .summary-row-label { width: 220px; flex-shrink: 0; font-size: 13px; font-weight: 600; }
