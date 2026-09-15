@@ -7,6 +7,29 @@ const QUADRANTS = [
   { key: 'pilot_improve', title: 'Pilot & Improve', subtitle: 'Short-Term · Transform', desc: 'Test, learn and iterate', term: 'short', mode: 'transform', color: 'purple' },
 ];
 
+function aggregatePerformTransform(submissions) {
+  let performHours = 0, transformHours = 0;
+  submissions.forEach(s => {
+    const quadrants = s.quadrants || {};
+    QUADRANTS.forEach(q => {
+      const hours = Number((quadrants[q.key] || {}).hours) || 0;
+      if (q.mode === 'perform') performHours += hours;
+      else transformHours += hours;
+    });
+    performHours += Number(s.adminHours) || 0;
+  });
+  return { performHours, transformHours };
+}
+
+function classifyBalance(performHours, transformHours) {
+  const total = performHours + transformHours;
+  if (!total) return { zone: 'none', label: 'No data', transformPct: 0 };
+  const transformPct = Math.round((transformHours / total) * 100);
+  if (transformPct >= 25) return { zone: 'green', label: 'Balanced', transformPct };
+  if (transformPct >= 10) return { zone: 'yellow', label: 'Leaning Perform', transformPct };
+  return { zone: 'red', label: 'Heavy Perform', transformPct };
+}
+
 function loadSubmissions() {
   try {
     return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
@@ -309,6 +332,8 @@ function buildSubmissionSummary(s) {
     .filter(e => e.activity && e.activity.trim());
   const n = entries.length;
   const quadrantHours = QUADRANTS.reduce((sum, q) => sum + (Number((quadrants[q.key] || {}).hours) || 0), 0);
+  const { performHours, transformHours } = aggregatePerformTransform([s]);
+  const balance = classifyBalance(performHours, transformHours);
 
   return {
     contributor: s.contributor,
@@ -316,6 +341,9 @@ function buildSubmissionSummary(s) {
     status: s.status,
     activitiesCount: n,
     hoursTotal: quadrantHours + (Number(s.adminHours) || 0),
+    zone: balance.zone,
+    zoneLabel: balance.label,
+    transformPct: balance.transformPct,
     summaryText: [
       ...entries.map(a => `[${qTitle(a.quadrant)}] ${a.activity}`),
       s.adminNotes ? `[Administrative activity] ${s.adminNotes}` : null,
@@ -335,7 +363,7 @@ function getTeamInputSummaryRows(includeDrafts, search) {
   return rows;
 }
 
-function getQuadrantHoursBreakdown(includeDrafts, search) {
+function filterSubmissionsForReport(includeDrafts, search) {
   let submissions = loadSubmissions().filter(s => includeDrafts || s.status === 'Submitted');
   if (search) {
     submissions = submissions.filter(s => {
@@ -343,6 +371,17 @@ function getQuadrantHoursBreakdown(includeDrafts, search) {
       return [s.contributor, summary.summaryText].some(v => (v || '').toLowerCase().includes(search));
     });
   }
+  return submissions;
+}
+
+function getTeamZone(includeDrafts, search) {
+  const submissions = filterSubmissionsForReport(includeDrafts, search);
+  const { performHours, transformHours } = aggregatePerformTransform(submissions);
+  return classifyBalance(performHours, transformHours);
+}
+
+function getQuadrantHoursBreakdown(includeDrafts, search) {
+  const submissions = filterSubmissionsForReport(includeDrafts, search);
 
   const totals = QUADRANTS.map(q => ({
     title: q.title,
@@ -358,13 +397,7 @@ function getQuadrantHoursBreakdown(includeDrafts, search) {
 }
 
 function buildTeamNarrative(includeDrafts, search) {
-  let submissions = loadSubmissions().filter(s => includeDrafts || s.status === 'Submitted');
-  if (search) {
-    submissions = submissions.filter(s => {
-      const summary = buildSubmissionSummary(s);
-      return [s.contributor, summary.summaryText].some(v => (v || '').toLowerCase().includes(search));
-    });
-  }
+  const submissions = filterSubmissionsForReport(includeDrafts, search);
   if (submissions.length === 0) return 'No data yet — once contributors submit their hours, a summary will appear here.';
 
   const contributors = new Set(submissions.map(s => s.contributor)).size;
@@ -417,6 +450,16 @@ function renderTeamSummary() {
 
   document.getElementById('team-summary-narrative').textContent = buildTeamNarrative(includeDrafts, search);
 
+  const teamZone = getTeamZone(includeDrafts, search);
+  const badgeEl = document.getElementById('team-balance-badge');
+  badgeEl.textContent = '';
+  if (teamZone.zone !== 'none') {
+    const span = document.createElement('span');
+    span.className = `badge zone-${teamZone.zone}`;
+    span.textContent = `${teamZone.label} — ${teamZone.transformPct}% Transform`;
+    badgeEl.appendChild(span);
+  }
+
   document.getElementById('team-summary').innerHTML = sorted.map(t => {
     const pct = grandTotal ? Math.round((t.hours / grandTotal) * 100) : 0;
     return `
@@ -436,7 +479,7 @@ function renderTeamInputTable() {
 
   const field = teamInputSort.field;
   const dir = teamInputSort.dir === 'asc' ? 1 : -1;
-  const numericFields = ['activitiesCount', 'hoursTotal'];
+  const numericFields = ['activitiesCount', 'hoursTotal', 'transformPct'];
   rows.sort((a, b) => {
     if (numericFields.includes(field)) return ((a[field] || 0) - (b[field] || 0)) * dir;
     return String(a[field] ?? '').localeCompare(String(b[field] ?? '')) * dir;
@@ -454,9 +497,10 @@ function renderTeamInputTable() {
       <td>${r.status}</td>
       <td>${r.activitiesCount}</td>
       <td>${r.hoursTotal}h</td>
+      <td><span class="badge zone-${r.zone}">${escapeHtml(r.zoneLabel)} (${r.transformPct}%)</span></td>
       <td class="wrap-cell">${escapeHtml(r.summaryText) || '—'}</td>
       <td><button class="btn btn-ghost ti-open-btn" data-contributor="${escapeHtml(r.contributor)}" data-week="${r.week}">Open</button></td>
-    </tr>`).join('') || '<tr><td colspan="6" class="empty-hint">No submissions yet</td></tr>';
+    </tr>`).join('') || '<tr><td colspan="7" class="empty-hint">No submissions yet</td></tr>';
 
   document.querySelectorAll('.ti-open-btn').forEach(btn => {
     btn.addEventListener('click', () => openSubmissionInForm(btn.dataset.contributor, btn.dataset.week));
@@ -489,9 +533,10 @@ document.getElementById('btn-export-csv-team').addEventListener('click', () => {
   const includeDrafts = document.getElementById('ti-include-drafts').checked;
   const search = document.getElementById('ti-search').value.trim().toLowerCase();
   const rows = getTeamInputSummaryRows(includeDrafts, search);
-  const headers = ['Contributor', 'Week', 'Submission Status', 'Activities', 'Hours', 'Summary'];
+  const headers = ['Contributor', 'Week', 'Submission Status', 'Activities', 'Hours', 'Balance', 'Summary'];
   const csvRows = rows.map(r => [
-    r.contributor, formatWeekCell(r.week), r.status, r.activitiesCount, r.hoursTotal, r.summaryText
+    r.contributor, formatWeekCell(r.week), r.status, r.activitiesCount, r.hoursTotal,
+    `${r.zoneLabel} (${r.transformPct}% Transform)`, r.summaryText
   ]);
   downloadCSV(headers, csvRows, 'team-input-summary-export');
 });
