@@ -339,14 +339,12 @@ function buildSubmissionSummary(s) {
   const entries = QUADRANTS
     .map(q => ({ ...(quadrants[q.key] || {}), quadrant: q.key }))
     .filter(e => e.activity && e.activity.trim());
-  const n = entries.length;
   const quadrantHours = QUADRANTS.reduce((sum, q) => sum + (Number((quadrants[q.key] || {}).hours) || 0), 0);
 
   return {
     contributor: s.contributor,
     week: s.week,
     status: s.status,
-    activitiesCount: n,
     hoursTotal: quadrantHours + (Number(s.adminHours) || 0),
     summaryText: [
       ...entries.map(a => `[${qTitle(a.quadrant)}] ${a.activity}`),
@@ -424,20 +422,9 @@ function buildTeamNarrative(includeDrafts, search) {
   const topQuadrant = [...quadrantTotals, { title: 'Administrative activity', hours: adminHours }]
     .sort((a, b) => b.hours - a.hours)[0];
 
-  const perContributor = {};
-  submissions.forEach(s => {
-    const total = (s.quadrants ? Object.values(s.quadrants).reduce((sum, q) => sum + (Number(q.hours) || 0), 0) : 0)
-      + (Number(s.adminHours) || 0);
-    perContributor[s.contributor] = (perContributor[s.contributor] || 0) + total;
-  });
-  const topContributor = Object.entries(perContributor).sort((a, b) => b[1] - a[1])[0];
-
   const sentences = [];
   sentences.push(`Across ${contributors} contributor${contributors === 1 ? '' : 's'} and ${weeks} week${weeks === 1 ? '' : 's'}, the team logged ${grandTotal}h total (${submittedCount} submitted, ${draftCount} in draft).`);
   sentences.push(`The largest share of time went to "${topQuadrant.title}" (${topQuadrant.hours}h) — overall, ${performPct}% of hours were spent on running/scaling the business ("Perform") versus ${transformPct}% on future-focused work ("Transform").`);
-  if (topContributor) {
-    sentences.push(`${topContributor[0]} logged the most hours this period (${topContributor[1]}h).`);
-  }
   if (performPct - transformPct >= 30) {
     sentences.push(`The team is heavily weighted toward day-to-day execution — worth checking whether transformation initiatives are getting enough runway.`);
   } else if (transformPct - performPct >= 30) {
@@ -483,7 +470,7 @@ function renderTeamInputTable() {
 
   const field = teamInputSort.field;
   const dir = teamInputSort.dir === 'asc' ? 1 : -1;
-  const numericFields = ['activitiesCount', 'hoursTotal'];
+  const numericFields = ['hoursTotal'];
   rows.sort((a, b) => {
     if (numericFields.includes(field)) return ((a[field] || 0) - (b[field] || 0)) * dir;
     return String(a[field] ?? '').localeCompare(String(b[field] ?? '')) * dir;
@@ -499,7 +486,6 @@ function renderTeamInputTable() {
       <td>${escapeHtml(r.contributor)}</td>
       <td>${formatWeekCell(r.week)}</td>
       <td>${r.status}</td>
-      <td>${r.activitiesCount}</td>
       <td>${r.hoursTotal}h</td>
       <td class="wrap-cell">${escapeHtml(r.summaryText) || '—'}</td>
       <td class="row-actions">
@@ -548,9 +534,9 @@ document.getElementById('btn-export-csv-team').addEventListener('click', () => {
   const includeDrafts = document.getElementById('ti-include-drafts').checked;
   const search = document.getElementById('ti-search').value.trim().toLowerCase();
   const rows = getTeamInputSummaryRows(includeDrafts, search);
-  const headers = ['Contributor', 'Week', 'Submission Status', 'Activities', 'Hours', 'Summary'];
+  const headers = ['Contributor', 'Week', 'Submission Status', 'Hours', 'Summary'];
   const csvRows = rows.map(r => [
-    r.contributor, formatWeekCell(r.week), r.status, r.activitiesCount, r.hoursTotal, r.summaryText
+    r.contributor, formatWeekCell(r.week), r.status, r.hoursTotal, r.summaryText
   ]);
   downloadCSV(headers, csvRows, 'team-input-summary-export');
 });
