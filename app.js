@@ -1,10 +1,14 @@
 const STORAGE_KEY = 'twr_submissions_v1';
 
 const QUADRANTS = [
-  { key: 'standardize_scale', title: 'Standardize & Scale', subtitle: 'Long-Term · Perform', desc: 'Make what works repeatable and scalable', term: 'long', mode: 'perform', color: 'blue' },
-  { key: 'build_future', title: 'Build the Future', subtitle: 'Long-Term · Transform', desc: "Create what's next", term: 'long', mode: 'transform', color: 'green' },
-  { key: 'run_business', title: 'Run the Business', subtitle: 'Short-Term · Perform', desc: 'Keep the engine running', term: 'short', mode: 'perform', color: 'gray' },
-  { key: 'pilot_improve', title: 'Pilot & Improve', subtitle: 'Short-Term · Transform', desc: 'Test, learn and iterate', term: 'short', mode: 'transform', color: 'purple' },
+  { key: 'standardize_scale', title: 'Standardize & Scale', subtitle: 'Long-Term · Perform', desc: 'Make what works repeatable and scalable', term: 'long', mode: 'perform', color: 'blue',
+    tooltip: 'Improve proven work so it becomes repeatable and scalable. E.g., automation, standards, reusable processes.' },
+  { key: 'build_future', title: 'Build the Future', subtitle: 'Long-Term · Transform', desc: "Create what's next", term: 'long', mode: 'transform', color: 'green',
+    tooltip: 'Create new capabilities or solutions for long-term impact. E.g., new platforms, AI solutions, future architecture.' },
+  { key: 'run_business', title: 'Run the Business', subtitle: 'Short-Term · Perform', desc: 'Keep the engine running', term: 'short', mode: 'perform', color: 'gray',
+    tooltip: 'Complete work that keeps current business and delivery running. E.g., customer support, bug fixes, releases.' },
+  { key: 'pilot_improve', title: 'Pilot & Improve', subtitle: 'Short-Term · Transform', desc: 'Test, learn and iterate', term: 'short', mode: 'transform', color: 'purple',
+    tooltip: 'Test ideas and make improvements through quick learning. E.g., prototypes, feature pilots, UX testing.' },
 ];
 
 function aggregatePerformTransform(submissions) {
@@ -220,7 +224,7 @@ function renderQuadrants() {
         <div class="quadrant-head">
           <div>
             <span class="subtitle">${q.subtitle}</span>
-            <h3>${q.title}</h3>
+            <h3>${q.title} <span class="info-icon" data-tooltip="${q.tooltip}">i</span></h3>
             <span class="desc">${q.desc}</span>
           </div>
           <div class="quadrant-side-fields">
