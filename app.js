@@ -341,8 +341,6 @@ function buildSubmissionSummary(s) {
     .filter(e => e.activity && e.activity.trim());
   const n = entries.length;
   const quadrantHours = QUADRANTS.reduce((sum, q) => sum + (Number((quadrants[q.key] || {}).hours) || 0), 0);
-  const { performHours, transformHours } = aggregatePerformTransform([s]);
-  const balance = classifyBalance(performHours, transformHours);
 
   return {
     contributor: s.contributor,
@@ -350,9 +348,6 @@ function buildSubmissionSummary(s) {
     status: s.status,
     activitiesCount: n,
     hoursTotal: quadrantHours + (Number(s.adminHours) || 0),
-    zone: balance.zone,
-    zoneLabel: balance.label,
-    transformPct: balance.transformPct,
     summaryText: [
       ...entries.map(a => `[${qTitle(a.quadrant)}] ${a.activity}`),
       s.adminNotes ? `[Administrative activity] ${s.adminNotes}` : null,
@@ -488,7 +483,7 @@ function renderTeamInputTable() {
 
   const field = teamInputSort.field;
   const dir = teamInputSort.dir === 'asc' ? 1 : -1;
-  const numericFields = ['activitiesCount', 'hoursTotal', 'transformPct'];
+  const numericFields = ['activitiesCount', 'hoursTotal'];
   rows.sort((a, b) => {
     if (numericFields.includes(field)) return ((a[field] || 0) - (b[field] || 0)) * dir;
     return String(a[field] ?? '').localeCompare(String(b[field] ?? '')) * dir;
@@ -506,13 +501,12 @@ function renderTeamInputTable() {
       <td>${r.status}</td>
       <td>${r.activitiesCount}</td>
       <td>${r.hoursTotal}h</td>
-      <td><span class="badge zone-${r.zone}">${escapeHtml(r.zoneLabel)} (${r.transformPct}%)</span></td>
       <td class="wrap-cell">${escapeHtml(r.summaryText) || '—'}</td>
       <td class="row-actions">
         <button class="btn btn-ghost ti-open-btn" data-contributor="${escapeHtml(r.contributor)}" data-week="${r.week}">Open</button>
         <button class="btn btn-danger ti-delete-btn" data-contributor="${escapeHtml(r.contributor)}" data-week="${r.week}">Delete</button>
       </td>
-    </tr>`).join('') || '<tr><td colspan="7" class="empty-hint">No submissions yet</td></tr>';
+    </tr>`).join('') || '<tr><td colspan="6" class="empty-hint">No submissions yet</td></tr>';
 
   document.querySelectorAll('.ti-open-btn').forEach(btn => {
     btn.addEventListener('click', () => openSubmissionInForm(btn.dataset.contributor, btn.dataset.week));
@@ -554,10 +548,9 @@ document.getElementById('btn-export-csv-team').addEventListener('click', () => {
   const includeDrafts = document.getElementById('ti-include-drafts').checked;
   const search = document.getElementById('ti-search').value.trim().toLowerCase();
   const rows = getTeamInputSummaryRows(includeDrafts, search);
-  const headers = ['Contributor', 'Week', 'Submission Status', 'Activities', 'Hours', 'Balance', 'Summary'];
+  const headers = ['Contributor', 'Week', 'Submission Status', 'Activities', 'Hours', 'Summary'];
   const csvRows = rows.map(r => [
-    r.contributor, formatWeekCell(r.week), r.status, r.activitiesCount, r.hoursTotal,
-    `${r.zoneLabel} (${r.transformPct}% Transform)`, r.summaryText
+    r.contributor, formatWeekCell(r.week), r.status, r.activitiesCount, r.hoursTotal, r.summaryText
   ]);
   downloadCSV(headers, csvRows, 'team-input-summary-export');
 });
