@@ -158,6 +158,8 @@ input, select, textarea {
 .btn-ghost { background: white; border: 1px solid var(--border); color: var(--text); }
 .btn-warning { background: var(--amber); color: white; }
 .btn-danger { background: var(--red); color: white; }
+.row-actions { display: flex; gap: 6px; }
+.row-actions .btn { padding: 6px 12px; font-size: 12px; }
 .btn:hover { opacity: 0.9; }
 
 .filters-grid {

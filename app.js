@@ -46,6 +46,15 @@ function submissionKey(contributor, week) {
   return (contributor || '').trim().toLowerCase() + '|' + week;
 }
 
+function deleteSubmission(contributor, week) {
+  const id = submissionKey(contributor, week);
+  saveSubmissions(loadSubmissions().filter(s => s.id !== id));
+  if (currentSubmission && currentSubmission.id === id) {
+    currentSubmission = newEmptySubmission(contributor, week);
+    renderQuadrants();
+  }
+}
+
 // Submissions are keyed by the Monday of the reporting week, stored as "YYYY-MM-DD"
 // (sortable as plain strings) and always displayed to users as DD/MM/YYYY.
 function parseISODate(str) {
@@ -499,11 +508,23 @@ function renderTeamInputTable() {
       <td>${r.hoursTotal}h</td>
       <td><span class="badge zone-${r.zone}">${escapeHtml(r.zoneLabel)} (${r.transformPct}%)</span></td>
       <td class="wrap-cell">${escapeHtml(r.summaryText) || '—'}</td>
-      <td><button class="btn btn-ghost ti-open-btn" data-contributor="${escapeHtml(r.contributor)}" data-week="${r.week}">Open</button></td>
+      <td class="row-actions">
+        <button class="btn btn-ghost ti-open-btn" data-contributor="${escapeHtml(r.contributor)}" data-week="${r.week}">Open</button>
+        <button class="btn btn-danger ti-delete-btn" data-contributor="${escapeHtml(r.contributor)}" data-week="${r.week}">Delete</button>
+      </td>
     </tr>`).join('') || '<tr><td colspan="7" class="empty-hint">No submissions yet</td></tr>';
 
   document.querySelectorAll('.ti-open-btn').forEach(btn => {
     btn.addEventListener('click', () => openSubmissionInForm(btn.dataset.contributor, btn.dataset.week));
+  });
+
+  document.querySelectorAll('.ti-delete-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const { contributor, week } = btn.dataset;
+      if (!confirm(`Delete the submission for ${contributor} (week of ${formatDMY(parseISODate(week))})? This cannot be undone.`)) return;
+      deleteSubmission(contributor, week);
+      renderTeamInputTable();
+    });
   });
 }
 
