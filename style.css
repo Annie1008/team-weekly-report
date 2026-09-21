@@ -127,6 +127,26 @@ input, select, textarea {
 .quadrant-box.amber { background: #fef3e2; }
 
 .admin-box { margin-bottom: 20px; }
+
+.help-tile-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+@media (max-width: 900px) { .help-tile-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 600px) { .help-tile-grid { grid-template-columns: 1fr; } }
+.help-tile-card { border-radius: 10px; padding: 14px; }
+.help-tile-card h4 { margin: 0 0 6px; font-size: 14px; }
+.help-tile-card p { margin: 0; font-size: 12px; color: var(--text); line-height: 1.5; }
+.help-tile-card.blue { background: var(--blue-bg); }
+.help-tile-card.green { background: var(--green-bg); }
+.help-tile-card.gray { background: var(--gray-bg); }
+.help-tile-card.purple { background: var(--purple-bg); }
+.help-tile-card.amber { background: #fef3e2; }
+
+.help-intro { font-size: 13px; color: var(--muted); margin: 0 0 16px; }
+.help-role-card { border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-bottom: 14px; }
+.help-role-card:last-child { margin-bottom: 0; }
+.help-role-card h4 { margin: 0 0 10px; font-size: 14px; color: var(--navy); }
+.help-row { font-size: 13px; line-height: 1.6; margin-bottom: 6px; }
+.help-row:last-child { margin-bottom: 0; }
+.help-row strong { color: var(--navy); }
 .quadrant-box label { display: flex; flex-direction: column; font-size: 12px; color: var(--muted); gap: 4px; margin-top: 10px; }
 .quadrant-box textarea { width: 100%; }
 

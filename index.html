@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Weekly 2x2 Team Report</title>
-<link rel="stylesheet" href="style.css?v=8" />
+<link rel="stylesheet" href="style.css?v=9" />
 </head>
 <body>
 
@@ -16,6 +16,7 @@
   <nav class="tabs">
     <button class="tab-btn active" data-tab="submission">Weekly Submission</button>
     <button class="tab-btn" data-tab="team-input">Report</button>
+    <button class="tab-btn" data-tab="help">Help</button>
   </nav>
 </header>
 
@@ -117,9 +118,99 @@
 
   </section>
 
+  <!-- ===================== HELP TAB ===================== -->
+  <section id="tab-help" class="tab-panel">
+
+    <div class="card">
+      <div class="card-title">What goes where — the 5 tiles explained</div>
+      <div class="help-tile-grid">
+        <div class="help-tile-card blue">
+          <h4>Standardize & Scale</h4>
+          <p>Improve proven work so it becomes repeatable and scalable. E.g., automation, standards, reusable processes.</p>
+        </div>
+        <div class="help-tile-card green">
+          <h4>Build the Future</h4>
+          <p>Create new capabilities or solutions for long-term impact. E.g., new platforms, AI solutions, future architecture.</p>
+        </div>
+        <div class="help-tile-card gray">
+          <h4>Run the Business</h4>
+          <p>Complete work that keeps current business and delivery running. E.g., customer support, bug fixes, releases.</p>
+        </div>
+        <div class="help-tile-card purple">
+          <h4>Pilot & Improve</h4>
+          <p>Test ideas and make improvements through quick learning. E.g., prototypes, feature pilots, UX testing.</p>
+        </div>
+        <div class="help-tile-card amber">
+          <h4>Administrative Activity</h4>
+          <p>Complete essential internal and operational tasks. E.g., meetings, timesheets, training.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Examples by role</div>
+      <p class="help-intro">Not sure which tile your work falls under? Find your role below for concrete examples of how to log a typical week.</p>
+
+      <div class="help-role-card">
+        <h4>Engineer / Developer</h4>
+        <div class="help-row"><strong>Standardize & Scale</strong> — Automating a manual deployment step, writing a reusable internal library, setting coding standards.</div>
+        <div class="help-row"><strong>Build the Future</strong> — Building a new microservice or platform, prototyping an AI-powered feature.</div>
+        <div class="help-row"><strong>Run the Business</strong> — Fixing a production bug, on-call support, shipping a release.</div>
+        <div class="help-row"><strong>Pilot & Improve</strong> — A/B testing a new algorithm, building a proof-of-concept for feedback.</div>
+        <div class="help-row"><strong>Administrative Activity</strong> — Standups, sprint planning, timesheets.</div>
+      </div>
+
+      <div class="help-role-card">
+        <h4>Product Manager</h4>
+        <div class="help-row"><strong>Standardize & Scale</strong> — Creating a reusable PRD template, documenting a repeatable roadmap process.</div>
+        <div class="help-row"><strong>Build the Future</strong> — Defining next-gen product vision, scoping a new market opportunity.</div>
+        <div class="help-row"><strong>Run the Business</strong> — Triaging customer feedback, prioritizing the bug backlog, answering stakeholder questions.</div>
+        <div class="help-row"><strong>Pilot & Improve</strong> — Running a feature pilot with select customers, analyzing pilot results.</div>
+        <div class="help-row"><strong>Administrative Activity</strong> — Roadmap reviews, status reports, 1:1s.</div>
+      </div>
+
+      <div class="help-role-card">
+        <h4>Designer</h4>
+        <div class="help-row"><strong>Standardize & Scale</strong> — Building or maintaining the design system / component library.</div>
+        <div class="help-row"><strong>Build the Future</strong> — Designing a new product concept or exploring a future UX direction.</div>
+        <div class="help-row"><strong>Run the Business</strong> — Fixing UI bugs, supporting an in-progress feature release.</div>
+        <div class="help-row"><strong>Pilot & Improve</strong> — Running usability tests, iterating a prototype based on feedback.</div>
+        <div class="help-row"><strong>Administrative Activity</strong> — Design reviews, sprint planning.</div>
+      </div>
+
+      <div class="help-role-card">
+        <h4>QA / Support</h4>
+        <div class="help-row"><strong>Standardize & Scale</strong> — Building an automated test suite, writing reusable support documentation/FAQs.</div>
+        <div class="help-row"><strong>Build the Future</strong> — Designing the test strategy for a new platform.</div>
+        <div class="help-row"><strong>Run the Business</strong> — Handling customer tickets, running regression tests, resolving bugs.</div>
+        <div class="help-row"><strong>Pilot & Improve</strong> — Piloting a new support tool, testing a new feature flow before rollout.</div>
+        <div class="help-row"><strong>Administrative Activity</strong> — Ticket triage meetings, reporting metrics.</div>
+      </div>
+
+      <div class="help-role-card">
+        <h4>Data / Analyst</h4>
+        <div class="help-row"><strong>Standardize & Scale</strong> — Building a reusable dashboard template or reporting pipeline.</div>
+        <div class="help-row"><strong>Build the Future</strong> — Building a new data platform/pipeline, exploring a new ML model.</div>
+        <div class="help-row"><strong>Run the Business</strong> — Answering ad-hoc data requests, maintaining existing reports.</div>
+        <div class="help-row"><strong>Pilot & Improve</strong> — Running an A/B test analysis, testing a new metric definition.</div>
+        <div class="help-row"><strong>Administrative Activity</strong> — Data governance meetings, documentation.</div>
+      </div>
+
+      <div class="help-role-card">
+        <h4>Manager / Lead</h4>
+        <div class="help-row"><strong>Standardize & Scale</strong> — Creating a team playbook, scaling the onboarding process.</div>
+        <div class="help-row"><strong>Build the Future</strong> — Defining team strategy, planning a new initiative.</div>
+        <div class="help-row"><strong>Run the Business</strong> — Unblocking the team, handling escalations, performance reviews.</div>
+        <div class="help-row"><strong>Pilot & Improve</strong> — Piloting a new team process and gathering feedback.</div>
+        <div class="help-row"><strong>Administrative Activity</strong> — 1:1s, timesheets, budget/headcount admin.</div>
+      </div>
+
+    </div>
+
+  </section>
 
 </main>
 
-<script src="app.js?v=8"></script>
+<script src="app.js?v=9"></script>
 </body>
 </html>
