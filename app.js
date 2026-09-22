@@ -1,4 +1,11 @@
-const STORAGE_KEY = 'twr_submissions_v1';
+const SUPABASE_URL = 'https://rxcpcjttzsgggnkorvua.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ4Y3BjanR0enNnZ2dua29ydnVhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAwNzAxNTksImV4cCI6MjEwNTY0NjE1OX0.QWqL1ZATNtmckQiIeatXh5ruCYEEb_iPDSat1dDBj-I';
+const SUBMISSIONS_ENDPOINT = `${SUPABASE_URL}/rest/v1/submissions`;
+const SUPABASE_HEADERS = {
+  apikey: SUPABASE_ANON_KEY,
+  Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+  'Content-Type': 'application/json',
+};
 
 const QUADRANTS = [
   { key: 'standardize_scale', title: 'Standardize & Scale', subtitle: 'Long-Term · Perform', desc: 'Make what works repeatable and scalable', term: 'long', mode: 'perform', color: 'blue',
@@ -34,25 +41,46 @@ function classifyBalance(performHours, transformHours) {
   return { zone: 'red', label: 'Heavy Perform', transformPct };
 }
 
+let submissionsCache = [];
+
 function loadSubmissions() {
+  return submissionsCache;
+}
+
+async function refreshSubmissions() {
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+    const res = await fetch(`${SUBMISSIONS_ENDPOINT}?select=data`, { headers: SUPABASE_HEADERS });
+    const rows = await res.json();
+    submissionsCache = rows.map(r => r.data);
   } catch (e) {
-    return [];
+    console.error('Failed to load submissions from Supabase', e);
   }
 }
 
-function saveSubmissions(list) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+async function saveSubmissionRemote(submission) {
+  await fetch(SUBMISSIONS_ENDPOINT, {
+    method: 'POST',
+    headers: { ...SUPABASE_HEADERS, Prefer: 'resolution=merge-duplicates,return=minimal' },
+    body: JSON.stringify({ id: submission.id, data: submission }),
+  });
+  await refreshSubmissions();
+}
+
+async function deleteSubmissionRemote(id) {
+  await fetch(`${SUBMISSIONS_ENDPOINT}?id=eq.${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    headers: SUPABASE_HEADERS,
+  });
+  await refreshSubmissions();
 }
 
 function submissionKey(contributor, week) {
   return (contributor || '').trim().toLowerCase() + '|' + week;
 }
 
-function deleteSubmission(contributor, week) {
+async function deleteSubmission(contributor, week) {
   const id = submissionKey(contributor, week);
-  saveSubmissions(loadSubmissions().filter(s => s.id !== id));
+  await deleteSubmissionRemote(id);
   if (currentSubmission && currentSubmission.id === id) {
     currentSubmission = newEmptySubmission(contributor, week);
     renderQuadrants();
@@ -106,12 +134,15 @@ let currentSubmission = null;
 
 // ---------- Tabs ----------
 document.querySelectorAll('.tab-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
+  btn.addEventListener('click', async () => {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
     btn.classList.add('active');
     document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
-    if (btn.dataset.tab === 'team-input') renderTeamInputTable();
+    if (btn.dataset.tab === 'team-input') {
+      await refreshSubmissions();
+      renderTeamInputTable();
+    }
   });
 });
 
@@ -261,30 +292,27 @@ function updateAllocationBar() {
 }
 
 // ---------- Footer actions ----------
-function persistCurrent() {
+async function persistCurrent() {
   if (!currentSubmission.contributor || !currentSubmission.week) {
     alert("Contributor's name and reporting week are required.");
     return false;
   }
   currentSubmission.id = submissionKey(currentSubmission.contributor, currentSubmission.week);
-  const all = loadSubmissions();
-  const idx = all.findIndex(s => s.id === currentSubmission.id);
-  if (idx >= 0) all[idx] = currentSubmission; else all.push(currentSubmission);
-  saveSubmissions(all);
+  await saveSubmissionRemote(currentSubmission);
   return true;
 }
 
-document.getElementById('btn-save-draft').addEventListener('click', () => {
+document.getElementById('btn-save-draft').addEventListener('click', async () => {
   currentSubmission.contributor = document.getElementById('f-contributor').value.trim();
   currentSubmission.week = document.getElementById('f-week-canonical').value;
   currentSubmission.status = currentSubmission.status === 'Submitted' ? 'Submitted' : 'Draft';
-  if (persistCurrent()) {
+  if (await persistCurrent()) {
     updateStatusBadge();
     alert('Draft saved.');
   }
 });
 
-document.getElementById('btn-submit-week').addEventListener('click', () => {
+document.getElementById('btn-submit-week').addEventListener('click', async () => {
   currentSubmission.contributor = document.getElementById('f-contributor').value.trim();
   currentSubmission.week = document.getElementById('f-week-canonical').value;
   const hasAnyActivity = QUADRANTS.some(q => ensureQuadrant(q.key).activity) || currentSubmission.adminNotes;
@@ -293,16 +321,16 @@ document.getElementById('btn-submit-week').addEventListener('click', () => {
   }
   currentSubmission.status = 'Submitted';
   currentSubmission.submittedAt = new Date().toISOString();
-  if (persistCurrent()) {
+  if (await persistCurrent()) {
     updateStatusBadge();
     alert('Week submitted.');
   }
 });
 
-document.getElementById('btn-reopen').addEventListener('click', () => {
+document.getElementById('btn-reopen').addEventListener('click', async () => {
   currentSubmission.status = 'Draft';
   currentSubmission.submittedAt = null;
-  persistCurrent();
+  await persistCurrent();
   updateStatusBadge();
 });
 
@@ -503,10 +531,10 @@ function renderTeamInputTable() {
   });
 
   document.querySelectorAll('.ti-delete-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
       const { contributor, week } = btn.dataset;
       if (!confirm(`Delete the submission for ${contributor} (week of ${formatDMY(parseISODate(week))})? This cannot be undone.`)) return;
-      deleteSubmission(contributor, week);
+      await deleteSubmission(contributor, week);
       renderTeamInputTable();
     });
   });
@@ -546,5 +574,9 @@ document.getElementById('btn-export-csv-team').addEventListener('click', () => {
 });
 
 // ---------- Init ----------
-document.getElementById('f-week').value = defaultWeekValue();
-onWeekFieldChange();
+async function initApp() {
+  await refreshSubmissions();
+  document.getElementById('f-week').value = defaultWeekValue();
+  onWeekFieldChange();
+}
+initApp();
