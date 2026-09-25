@@ -7,12 +7,19 @@ const SUPABASE_HEADERS = {
   'Content-Type': 'application/json',
 };
 
+const QUADRANT_ICONS = {
+  standardize_scale: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>',
+  build_future: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg>',
+  run_business: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>',
+  pilot_improve: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2v6.5L4.5 17a2 2 0 0 0 1.8 3h11.4a2 2 0 0 0 1.8-3L15 8.5V2"/><path d="M9 2h6"/><path d="M8 16h8"/></svg>',
+};
+
 const QUADRANTS = [
   { key: 'standardize_scale', title: 'Standardize & Scale', subtitle: 'Long-Term · Perform', desc: 'Make what works repeatable and scalable', term: 'long', mode: 'perform', color: 'blue',
     tooltip: 'Improve proven work so it becomes repeatable and scalable. E.g., automation, standards, reusable processes.' },
   { key: 'build_future', title: 'Build the Future', subtitle: 'Long-Term · Transform', desc: "Create what's next", term: 'long', mode: 'transform', color: 'green',
     tooltip: 'Create new capabilities or solutions for long-term impact. E.g., new platforms, AI solutions, future architecture.' },
-  { key: 'run_business', title: 'Run the Business', subtitle: 'Short-Term · Perform', desc: 'Keep the engine running', term: 'short', mode: 'perform', color: 'gray',
+  { key: 'run_business', title: 'Run the Business', subtitle: 'Short-Term · Perform', desc: 'Keep the engine running', term: 'short', mode: 'perform', color: 'blue',
     tooltip: 'Complete work that keeps current business and delivery running. E.g., customer support, bug fixes, releases.' },
   { key: 'pilot_improve', title: 'Pilot & Improve', subtitle: 'Short-Term · Transform', desc: 'Test, learn and iterate', term: 'short', mode: 'transform', color: 'purple',
     tooltip: 'Test ideas and make improvements through quick learning. E.g., prototypes, feature pilots, UX testing.' },
@@ -253,10 +260,13 @@ function renderQuadrants() {
     return `
       <div class="quadrant-box ${q.color}" data-quadrant="${q.key}">
         <div class="quadrant-head">
-          <div>
-            <span class="subtitle">${q.subtitle}</span>
-            <h3>${q.title} <span class="info-icon" data-tooltip="${q.tooltip}">i</span></h3>
-            <span class="desc">${q.desc}</span>
+          <div class="quadrant-head-main">
+            <span class="quadrant-icon-badge">${QUADRANT_ICONS[q.key] || ''}</span>
+            <div>
+              <span class="subtitle">${q.subtitle}</span>
+              <h3>${q.title} <span class="info-icon" data-tooltip="${q.tooltip}">i</span></h3>
+              <span class="desc">${q.desc}</span>
+            </div>
           </div>
           <div class="quadrant-side-fields">
             <label class="mini-field">Hours spent
@@ -373,15 +383,18 @@ function buildSubmissionSummary(s) {
     .filter(e => e.activity && e.activity.trim());
   const quadrantHours = QUADRANTS.reduce((sum, q) => sum + (Number((quadrants[q.key] || {}).hours) || 0), 0);
 
+  const summaryPoints = [
+    ...entries.map(a => ({ label: qTitle(a.quadrant), text: a.activity })),
+    s.adminNotes ? { label: 'Administrative activity', text: s.adminNotes } : null,
+  ].filter(Boolean);
+
   return {
     contributor: s.contributor,
     week: s.week,
     status: s.status,
     hoursTotal: quadrantHours + (Number(s.adminHours) || 0),
-    summaryText: [
-      ...entries.map(a => `[${qTitle(a.quadrant)}] ${a.activity}`),
-      s.adminNotes ? `[Administrative activity] ${s.adminNotes}` : null,
-    ].filter(Boolean).join('; '),
+    summaryPoints,
+    summaryText: summaryPoints.map(p => `[${p.label}] ${p.text}`).join('; '),
   };
 }
 
@@ -519,7 +532,7 @@ function renderTeamInputTable() {
       <td>${formatWeekCell(r.week)}</td>
       <td>${r.status}</td>
       <td>${r.hoursTotal}h</td>
-      <td class="wrap-cell">${escapeHtml(r.summaryText) || '—'}</td>
+      <td class="wrap-cell">${r.summaryPoints.length ? `<ul class="summary-points">${r.summaryPoints.map(p => `<li><span class="summary-label">${escapeHtml(p.label)}</span> — ${escapeHtml(p.text)}</li>`).join('')}</ul>` : '—'}</td>
       <td class="row-actions">
         <button class="btn btn-ghost ti-open-btn" data-contributor="${escapeHtml(r.contributor)}" data-week="${r.week}">Open</button>
         <button class="btn btn-danger ti-delete-btn" data-contributor="${escapeHtml(r.contributor)}" data-week="${r.week}">Delete</button>

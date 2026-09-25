@@ -36,6 +36,23 @@ body {
 .topbar-title h1 { margin: 0; font-size: 20px; }
 .topbar-title span { font-size: 13px; opacity: 0.75; }
 
+.topbar-brand { display: flex; align-items: center; gap: 12px; }
+.topbar-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  background: white;
+  color: var(--blue);
+}
+
+.hero-block { margin-bottom: 20px; }
+.hero-block h2 { margin: 0 0 4px; font-size: 26px; font-weight: 800; color: var(--navy); }
+.hero-block p { margin: 0; font-size: 14px; color: var(--muted); }
+
 .tabs { display: flex; gap: 8px; }
 .tab-btn {
   background: rgba(255,255,255,0.1);
@@ -61,6 +78,37 @@ main { max-width: 1200px; margin: 0 auto; padding: 24px 20px 60px; }
   margin-bottom: 20px;
 }
 .card-title { font-weight: 700; margin-bottom: 12px; font-size: 15px; }
+
+.card-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px; }
+
+.card-title-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.card-title-row .card-title { margin-bottom: 0; }
+
+.icon-badge-sm {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: 8px;
+}
+.icon-badge-sm.blue { background: #d3e4fb; color: var(--blue); }
+.icon-badge-sm.green { background: #cdf0e0; color: var(--green); }
+.icon-badge-sm.purple { background: #e0d6f7; color: var(--purple); }
+.icon-badge-sm.amber { background: #fef3e2; color: var(--amber); }
+.icon-badge-sm.navy { background: var(--gray-bg); color: var(--navy); }
+.card-head .card-title { margin-bottom: 0; }
+
+.hours-pill {
+  background: var(--blue-bg);
+  color: var(--blue);
+  font-weight: 700;
+  font-size: 13px;
+  padding: 8px 14px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
 
 .details-grid {
   display: grid;
@@ -101,9 +149,6 @@ input, select, textarea {
 
 .balance-badge-row { margin-bottom: 10px; }
 
-.allocation-bar-wrap { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
-#allocation-label { font-size: 13px; color: var(--muted); white-space: nowrap; }
-
 .quadrant-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -117,28 +162,35 @@ input, select, textarea {
 
 .quadrant-box {
   border-radius: 12px;
+  border-top: 4px solid transparent;
   padding: 16px;
   min-height: 140px;
 }
-.quadrant-box.blue { background: var(--blue-bg); }
-.quadrant-box.green { background: var(--green-bg); }
-.quadrant-box.gray { background: var(--gray-bg); }
-.quadrant-box.purple { background: var(--purple-bg); }
-.quadrant-box.amber { background: #fef3e2; }
+.quadrant-box.blue { background: var(--blue-bg); border-top-color: var(--blue); }
+.quadrant-box.green { background: var(--green-bg); border-top-color: var(--green); }
+.quadrant-box.gray { background: var(--gray-bg); border-top-color: var(--muted); }
+.quadrant-box.purple { background: var(--purple-bg); border-top-color: var(--purple); }
+.quadrant-box.amber { background: #fef3e2; border-top-color: var(--amber); }
 
 .admin-box { margin-bottom: 20px; }
 
 .help-tile-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
 @media (max-width: 900px) { .help-tile-grid { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 600px) { .help-tile-grid { grid-template-columns: 1fr; } }
-.help-tile-card { border-radius: 10px; padding: 14px; }
+.help-tile-card { border-radius: 10px; border-top: 4px solid transparent; padding: 14px; }
+.help-tile-card .quadrant-icon-badge { margin-bottom: 10px; }
 .help-tile-card h4 { margin: 0 0 6px; font-size: 14px; }
 .help-tile-card p { margin: 0; font-size: 12px; color: var(--text); line-height: 1.5; }
-.help-tile-card.blue { background: var(--blue-bg); }
-.help-tile-card.green { background: var(--green-bg); }
-.help-tile-card.gray { background: var(--gray-bg); }
-.help-tile-card.purple { background: var(--purple-bg); }
-.help-tile-card.amber { background: #fef3e2; }
+.help-tile-card.blue { background: var(--blue-bg); border-top-color: var(--blue); }
+.help-tile-card.green { background: var(--green-bg); border-top-color: var(--green); }
+.help-tile-card.gray { background: var(--gray-bg); border-top-color: var(--muted); }
+.help-tile-card.purple { background: var(--purple-bg); border-top-color: var(--purple); }
+.help-tile-card.amber { background: #fef3e2; border-top-color: var(--amber); }
+.help-tile-card.blue .quadrant-icon-badge { background: #d3e4fb; color: var(--blue); }
+.help-tile-card.green .quadrant-icon-badge { background: #cdf0e0; color: var(--green); }
+.help-tile-card.gray .quadrant-icon-badge { background: #dfe2ea; color: var(--muted); }
+.help-tile-card.purple .quadrant-icon-badge { background: #e0d6f7; color: var(--purple); }
+.help-tile-card.amber .quadrant-icon-badge { background: var(--amber); color: white; }
 
 .help-intro { font-size: 13px; color: var(--muted); margin: 0 0 16px; }
 .help-role-card { border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-bottom: 14px; }
@@ -156,6 +208,22 @@ input, select, textarea {
 
 .quadrant-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
 .quadrant-head h3 { margin: 0; font-size: 15px; }
+.quadrant-head-main { display: flex; align-items: flex-start; gap: 12px; }
+
+.quadrant-icon-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 10px;
+}
+.quadrant-box.blue .quadrant-icon-badge { background: #d3e4fb; color: var(--blue); }
+.quadrant-box.green .quadrant-icon-badge { background: #cdf0e0; color: var(--green); }
+.quadrant-box.gray .quadrant-icon-badge { background: #dfe2ea; color: var(--muted); }
+.quadrant-box.purple .quadrant-icon-badge { background: #e0d6f7; color: var(--purple); }
+.quadrant-box.amber .quadrant-icon-badge { background: var(--amber); color: white; }
 
 .info-icon {
   display: inline-flex;
@@ -287,3 +355,8 @@ tr:hover td { background: #fafbfd; }
 .excel-table tbody tr:hover td { background: #eef2fb; }
 .excel-table td.wrap-cell { white-space: normal; max-width: 280px; font-size: 12px; color: var(--muted); }
 .excel-table td.wrap-cell.blockers { color: var(--red); }
+
+.summary-points { margin: 0; padding-left: 16px; }
+.summary-points li { margin-bottom: 4px; }
+.summary-points li:last-child { margin-bottom: 0; }
+.summary-label { font-weight: 700; color: var(--navy); }
