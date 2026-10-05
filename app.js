@@ -55,29 +55,37 @@ function loadSubmissions() {
 }
 
 async function refreshSubmissions() {
-  try {
-    const res = await fetch(`${SUBMISSIONS_ENDPOINT}?select=data`, { headers: SUPABASE_HEADERS });
-    const rows = await res.json();
-    submissionsCache = rows.map(r => r.data);
-  } catch (e) {
-    console.error('Failed to load submissions from Supabase', e);
+  const res = await fetch(`${SUBMISSIONS_ENDPOINT}?select=data`, { headers: SUPABASE_HEADERS });
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '');
+    throw new Error(`Load failed (${res.status}): ${detail || res.statusText}`);
   }
+  const rows = await res.json();
+  submissionsCache = rows.map(r => r.data);
 }
 
 async function saveSubmissionRemote(submission) {
-  await fetch(SUBMISSIONS_ENDPOINT, {
+  const res = await fetch(SUBMISSIONS_ENDPOINT, {
     method: 'POST',
     headers: { ...SUPABASE_HEADERS, Prefer: 'resolution=merge-duplicates,return=minimal' },
     body: JSON.stringify({ id: submission.id, data: submission }),
   });
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '');
+    throw new Error(`Save failed (${res.status}): ${detail || res.statusText}`);
+  }
   await refreshSubmissions();
 }
 
 async function deleteSubmissionRemote(id) {
-  await fetch(`${SUBMISSIONS_ENDPOINT}?id=eq.${encodeURIComponent(id)}`, {
+  const res = await fetch(`${SUBMISSIONS_ENDPOINT}?id=eq.${encodeURIComponent(id)}`, {
     method: 'DELETE',
     headers: SUPABASE_HEADERS,
   });
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '');
+    throw new Error(`Delete failed (${res.status}): ${detail || res.statusText}`);
+  }
   await refreshSubmissions();
 }
 
@@ -147,7 +155,12 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.classList.add('active');
     document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
     if (btn.dataset.tab === 'team-input') {
-      await refreshSubmissions();
+      try {
+        await refreshSubmissions();
+      } catch (e) {
+        console.error('Failed to load submissions', e);
+        alert(`Couldn't load team data from the server.\n\n${e.message}`);
+      }
       renderTeamInputTable();
     }
   });
@@ -298,7 +311,7 @@ function renderQuadrants() {
 function updateAllocationBar() {
   const total = QUADRANTS.reduce((sum, q) => sum + (Number(ensureQuadrant(q.key).hours) || 0), 0)
     + (Number(currentSubmission.adminHours) || 0);
-  document.getElementById('allocation-label').textContent = `Total hours logged: ${total}h`;
+  document.getElementById('allocation-label').textContent = `Total hours spent: ${total}h`;
 }
 
 // ---------- Footer actions ----------
@@ -308,8 +321,14 @@ async function persistCurrent() {
     return false;
   }
   currentSubmission.id = submissionKey(currentSubmission.contributor, currentSubmission.week);
-  await saveSubmissionRemote(currentSubmission);
-  return true;
+  try {
+    await saveSubmissionRemote(currentSubmission);
+    return true;
+  } catch (e) {
+    console.error('Failed to save submission', e);
+    alert(`Couldn't save — your changes were NOT submitted.\n\n${e.message}\n\nCheck your connection and try again.`);
+    return false;
+  }
 }
 
 document.getElementById('btn-save-draft').addEventListener('click', async () => {
@@ -547,7 +566,12 @@ function renderTeamInputTable() {
     btn.addEventListener('click', async () => {
       const { contributor, week } = btn.dataset;
       if (!confirm(`Delete the submission for ${contributor} (week of ${formatDMY(parseISODate(week))})? This cannot be undone.`)) return;
-      await deleteSubmission(contributor, week);
+      try {
+        await deleteSubmission(contributor, week);
+      } catch (e) {
+        console.error('Failed to delete submission', e);
+        alert(`Couldn't delete — nothing was removed.\n\n${e.message}`);
+      }
       renderTeamInputTable();
     });
   });
@@ -588,7 +612,12 @@ document.getElementById('btn-export-csv-team').addEventListener('click', () => {
 
 // ---------- Init ----------
 async function initApp() {
-  await refreshSubmissions();
+  try {
+    await refreshSubmissions();
+  } catch (e) {
+    console.error('Failed to load submissions on startup', e);
+    alert(`Couldn't connect to the server, so existing submissions aren't loaded.\n\n${e.message}\n\nYou can still fill in the form, but saving/submitting will likely fail too until this is resolved.`);
+  }
   document.getElementById('f-week').value = defaultWeekValue();
   onWeekFieldChange();
 }
