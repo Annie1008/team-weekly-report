@@ -357,9 +357,14 @@ document.getElementById('btn-submit-week').addEventListener('click', async () =>
 });
 
 document.getElementById('btn-reopen').addEventListener('click', async () => {
+  const prevStatus = currentSubmission.status;
+  const prevSubmittedAt = currentSubmission.submittedAt;
   currentSubmission.status = 'Draft';
   currentSubmission.submittedAt = null;
-  await persistCurrent();
+  if (!(await persistCurrent())) {
+    currentSubmission.status = prevStatus;
+    currentSubmission.submittedAt = prevSubmittedAt;
+  }
   updateStatusBadge();
 });
 
